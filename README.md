@@ -13,17 +13,21 @@ This tool allows you to create and maintain a complete backup of all your GitHub
 - **Separate Storage**: Public and private Gists are stored in separate directories for better organization
 - **Smart Naming**: Uses the first filename of each Gist to create meaningful directory names
 - **Incremental Backups**: Only updates Gists that have changed since the last backup
+- **Markdown Extraction**: Automatically extracts all markdown files into a flat directory structure
+- **Pagination Safety**: Includes limits to prevent infinite loops when fetching large collections
 - **Detailed Logging**: Provides comprehensive logs of the backup process
 - **Error Handling**: Robust error detection and reporting
 
 ## How It Works
 
 The script:
-1. Fetches all your Gists using the GitHub API
+1. Fetches all your Gists using the GitHub API with proper pagination
 2. Separates them into public and private categories
 3. Uses the first filename of each Gist to create a meaningful directory name
 4. Clones new Gists or updates existing ones
-5. Maintains a marker file to track which Gists have been backed up
+5. Extracts all markdown files into a flat directory structure for easy access
+6. Handles filename conflicts by adding numeric suffixes
+7. Maintains a marker file to track which Gists have been backed up
 
 ## GitHub Gists Structure
 
@@ -75,6 +79,19 @@ For better security, consider using environment variables instead of hardcoding 
 - `curl`: For API requests
 - `jq`: For JSON parsing
 - `git`: For cloning Gists
+
+## Directory Structure
+
+After running the script, you'll have the following directory structure:
+
+```
+backup_path/
+├── public/           # Public Gists, each in its own directory
+├── private/          # Private Gists, each in its own directory
+└── markdown_files/   # All markdown files extracted from Gists
+```
+
+The `markdown_files` directory provides a convenient way to access all your markdown content without navigating through individual Gist directories.
 
 ## License
 

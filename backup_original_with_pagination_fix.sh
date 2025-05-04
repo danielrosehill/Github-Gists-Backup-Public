@@ -11,8 +11,6 @@ GITHUB_TOKEN="github_pat_12ABCDEFG0HiJk1LmN2OPq3RsTuV4WxYz5AbCdEfGhIjKlMnOpQrStU
 MAX_NAME_LENGTH=30
 # Current date in DDMMYY format for folder naming
 CURRENT_DATE=$(date '+%d%m%y')
-# Directory for flat markdown files structure
-MARKDOWN_DIR="$BACKUP_PATH/markdown_files"
 
 # Log function
 log() {
@@ -24,44 +22,9 @@ error_log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" >&2
 }
 
-# Function to extract markdown files from a gist folder and copy to flat structure
-extract_markdown_files() {
-  local gist_folder="$1"
-  local gist_id="$2"
-  
-  log "Extracting markdown files from gist $gist_id..."
-  
-  # Find all markdown files in the gist folder
-  find "$gist_folder" -type f -name "*.md" | while read -r md_file; do
-    # Get the base filename
-    base_filename=$(basename "$md_file")
-    target_file="$MARKDOWN_DIR/$base_filename"
-    
-    # Handle filename conflicts by adding a number suffix
-    if [ -f "$target_file" ]; then
-      log "File $base_filename already exists in markdown directory"
-      counter=1
-      filename_without_ext="${base_filename%.md}"
-      while [ -f "$MARKDOWN_DIR/${filename_without_ext}_${counter}.md" ]; do
-        ((counter++))
-      done
-      target_file="$MARKDOWN_DIR/${filename_without_ext}_${counter}.md"
-      log "Using alternative filename: $(basename "$target_file")"
-    fi
-    
-    # Copy the markdown file to the flat directory
-    cp "$md_file" "$target_file" || {
-      error_log "Failed to copy $md_file to $target_file"
-      continue
-    }
-    
-    log "Copied markdown file: $(basename "$target_file")"
-  done
-}
-
 # Create backup directory
 log "Starting GitHub gists backup to $BACKUP_PATH"
-mkdir -p "$BACKUP_PATH/public" "$BACKUP_PATH/private" "$MARKDOWN_DIR" || {
+mkdir -p "$BACKUP_PATH/public" "$BACKUP_PATH/private" || {
   error_log "Failed to create backup directories"
   exit 1
 }
@@ -155,10 +118,6 @@ while [ $page -le $MAX_PAGES ]; do
       log "Updating gist in $existing_folder..."
       if git -C "$existing_folder" pull --quiet; then
         log "Successfully updated gist $gist_id in $existing_folder"
-        
-        # Extract markdown files from this gist
-        extract_markdown_files "$existing_folder" "$gist_id"
-        
         ((SUCCESSFUL++))
       else
         error_log "Failed to update gist $gist_id in $existing_folder"
@@ -171,10 +130,6 @@ while [ $page -le $MAX_PAGES ]; do
         # Create a marker file with the gist ID for future incremental updates
         echo "$gist_id" > "$gist_path/.gist_id"
         log "Successfully cloned gist $gist_id to $gist_path"
-        
-        # Extract markdown files from this gist
-        extract_markdown_files "$gist_path" "$gist_id"
-        
         ((SUCCESSFUL++))
       else
         error_log "Failed to clone gist $gist_id to $gist_path"
@@ -195,10 +150,6 @@ log "Backup location: $BACKUP_PATH"
 # Log total disk usage
 TOTAL_SIZE=$(du -sh "$BACKUP_PATH" | cut -f1)
 log "Total backup size: $TOTAL_SIZE"
-
-# Count markdown files
-MD_COUNT=$(find "$MARKDOWN_DIR" -type f -name "*.md" | wc -l)
-log "Total markdown files extracted: $MD_COUNT"
 
 # Log completion time
 log "Backup completed at: $(date '+%Y-%m-%d %H:%M:%S')"
